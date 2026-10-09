@@ -29,12 +29,14 @@ wallet: the app is only a transaction builder/signer UI.
 - Vanilla TS, runs on Node ≥ 24 (type-stripping) and in the browser
 
 ## Run & demo
+Live (GitHub Pages): **https://younisgaith1-ctrl.github.io/bulkpayout/**
+
 ```bash
 npm install
 npm test                  # 15 unit tests
 npm run check             # real devnet check: blockhash, sizes, fees, simulation
-npm run build             # bundles the PWA (ui/bundle.js, no framework)
-npm run serve             # http://localhost:4173
+npm run build             # bundles the PWA (bundle.js, no framework)
+npm run serve             # http://localhost:4173 (ui/app.ts source)
 ```
 
 Demo flow (no devnet tokens required):
@@ -52,7 +54,10 @@ Demo flow (no devnet tokens required):
 src/csv.ts        CSV parsing + validation
 src/address.ts    Solana base58 validate/normalize (zero-dep)
 src/batcher.ts    pack transfers into transactions under a byte budget
-src/transfer.ts   SPL transferChecked instruction assembly (web3.js)
-ui/               PWA (wallet adapter + send/simulate)
+src/transfer.ts   real tx assembly (ATA creation + transferChecked + memo)
+src/devnet-check.ts  live devnet verification script
+ui/app.ts         PWA source (bundled by esbuild)
+index.html        PWA shell (served by GitHub Pages)
+bundle.js         bundled app
 tests/            node:test suites
 ```

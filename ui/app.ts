@@ -197,8 +197,15 @@ async function doSend(): Promise<void> {
 }
 
 async function doConnect(): Promise<void> {
-  const sol = (window as unknown as { solana?: any }).solana;
-  if (!sol) { bootstrap$.walletInfo.textContent = "no injected wallet found (install Phantom or Solflare)"; return; }
+  const win = window as unknown as { solana?: any; phantom?: { solana?: any } };
+  const sol = win.solana ?? win.phantom?.solana;
+  if (!sol) {
+    const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    bootstrap$.walletInfo.textContent = isMobile
+      ? "no wallet detected on mobile — open this page inside the wallet's own browser (Phantom/Solflare) or connect via WalletConnect"
+      : "wallet not detected. Help: 1) install the Phantom CHROME extension (mobile app is separate!) 2) restart the browser 3) hard reload this page (Ctrl+Shift+R) 4) click Connect again. Extension icon lives in the puzzle piece (top-right).";
+    return;
+  }
   try {
     await sol.connect({ onlyIfTrusted: false });
     const pk = sol.publicKey.toString();

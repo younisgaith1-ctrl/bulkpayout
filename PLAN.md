@@ -19,12 +19,16 @@ BulkPayout — mass SPL token payouts (payroll / airdrops / refunds) with:
 - [x] `src/address.ts` — zero-dep base58 validate (32-byte pubkeys)
 - [x] `src/csv.ts` — CSV/TSV parse + validation (comments, memos ≤32, bad rows skipped)
 - [x] `src/batcher.ts` — greedy byte-budget packing (950B soft cap)
-- [x] `src/transfer.ts` — spl-token transferChecked + ATA resolve (web3.js)
+- [x] `src/transfer.ts` — real tx assembly: ATA create + transferChecked + memo (no spl-memo dep)
+- [x] `src/devnet-check.ts` — live devnet check PASSED: 493B tx, real blockhash, fee=5000 lamports, simulation OK
 - [x] tests 15/15 passing (`node --test tests/*.test.ts`)
-- [ ] npm install (@solana/web3.js, @solana/spl-token) + real txn assembly test on devnet
-- [ ] PWA UI: wallet connect, CSV drag&drop, batch preview, simulate + send
-- [ ] Push to GitHub (public repo), README polish
-- [ ] Submission package: demo video script, written description, repo link
+- [x] npm install (@solana/web3.js, @solana/spl-token)
+- [x] PWA UI: wallet connect, CSV drop/paste, batch preview, simulate + send
+- [x] Pushed to GitHub: https://github.com/younisgaith1-ctrl/bulkpayout
+- [x] GitHub Pages: https://younisgaith1-ctrl.github.io/bulkpayout/
+- [ ] Demo video script + record (user records; I write script + walk through)
+- [ ] Written submission description (Colosseum form)
+- [ ] User: create wallet + register at colosseum.com/worldsfair before Oct 12
 
 ## User tasks (all at submission time, ~15 min total)
 1. Create a Solana wallet (Phantom or Solflare; devnet funded optional for simulate-only demo)

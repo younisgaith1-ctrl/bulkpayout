@@ -34,7 +34,7 @@ export function createMemoInstruction(
   return new TransactionInstruction({
     keys: signers.map((p) => ({ pubkey: p, isSigner: true, isWritable: false })),
     programId: MEMO_PROGRAM_ID,
-    data: Buffer.from(memo, "utf8"),
+    data: new TextEncoder().encode(memo),
   });
 }
 

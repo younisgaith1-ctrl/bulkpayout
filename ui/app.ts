@@ -2,9 +2,17 @@
  * BulkPayout PWA logic (bundled by esbuild into bundle.js).
  */
 import { Connection, PublicKey } from "@solana/web3.js";
+import { Buffer as NodeBuffer } from "buffer";
 import { parsePayoutCsv, type PayRow } from "../src/csv.ts";
 import { isValidPubkey } from "../src/address.ts";
 import { buildAll, feeAndSimulateAll, type BuiltBatch, type TxResult } from "../src/transfer.ts";
+
+// @solana/web3.js and @solana/spl-token expect a global Buffer in the browser.
+// esbuild does not polyfill Node globals, so we wire the (bundled) `buffer` package.
+const globalScope = globalThis as unknown as { Buffer?: unknown };
+if (!globalScope.Buffer) {
+  globalScope.Buffer = NodeBuffer;
+}
 
 const DEVNET_USDC = "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKXV";
 const DEVNET_RPCS = ["https://api.devnet.solana.com", "https://rpc.ankr.com/solana_devnet"];

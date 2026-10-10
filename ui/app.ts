@@ -260,20 +260,21 @@ async function doSend(): Promise<void> {
     for (const b of batches) {
       try {
         const signed = await sol.signTransaction(b.tx);
-        const signature = await conn.sendRawTransaction(signed.serialize());
-        let err: string | null = null;
-        try {
-          const r = await conn.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
-          if (r.value.err) err = JSON.stringify(r.value.err);
-        } catch (e) {
-          err = String(e);
-        }
-        results.push({ index: b.index, feeLamports: null, simulateError: err, simulateLogs: [], signature });
-        notify(err ? `tx ${b.index + 1}: ${err}` : `tx ${b.index + 1}: ${signature}`, err ? "err" : "ok");
+        const signature = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: false, preflightCommitment: "confirmed" });
+      let err: string | null = null;
+      try {
+        const r = await conn.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
+        if (r.value.err) err = JSON.stringify(r.value.err);
       } catch (e) {
-        results.push({ index: b.index, feeLamports: null, simulateError: String(e), simulateLogs: [], signature: null });
-        notify(`tx ${b.index + 1}: ${String(e)}`, "err");
+        err = String(e);
       }
+      results.push({ index: b.index, feeLamports: null, simulateError: err, simulateLogs: [], signature });
+      notify(err ? `tx ${b.index + 1}: ${err}` : `tx ${b.index + 1}: ${signature}`, err ? "err" : "ok");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.push({ index: b.index, feeLamports: null, simulateError: msg, simulateLogs: [], signature: null });
+      notify(`tx ${b.index + 1}: ${msg}`, "err");
+    }
     }
     renderBatches();
   } catch (e) {

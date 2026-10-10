@@ -76,21 +76,41 @@ export async function buildAll(
   const connection = spec.connection;
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
   const sourceAta = getAssociatedTokenAddressSync(TOKEN_PROGRAM_ID, spec.mint, spec.payer);
-  const sourceInfo = await connection.getAccountInfo(sourceAta);
+  const packed = packBatches(rows, packOpts);
+
+  // Resolve every recipient ATA and prefetch existence in parallel
+  // (one round-trip per recipient, all concurrent — much faster than sequential).
+  const recipientByIndex = new Map<number, { recipient: PublicKey; ata: PublicKey }>();
+  const existsByIndex = new Map<number, boolean>();
+  const checks: Promise<void>[] = [];
+  for (const batch of packed) {
+    for (const it of batch.items) {
+      const recipient = new PublicKey(it.row.address);
+      const ata = getAssociatedTokenAddressSync(TOKEN_PROGRAM_ID, spec.mint, recipient);
+      recipientByIndex.set(it.index, { recipient, ata });
+      checks.push(
+        connection
+          .getAccountInfo(ata)
+          .then((info) => {
+            existsByIndex.set(it.index, info !== null);
+          })
+          .catch(() => {
+            existsByIndex.set(it.index, true); // assume exists on RPC hiccup
+          })
+      );
+    }
+  }
+  await Promise.all(checks);
 
   const batches: BuiltBatch[] = [];
-  const packed = packBatches(rows, packOpts);
   for (let i = 0; i < packed.length; i++) {
     const batch = packed[i];
     const ixs: TransactionInstruction[] = [];
     const items: BuiltItem[] = [];
     for (const it of batch.items) {
-      const recipient = new PublicKey(it.row.address);
-      const ata = getAssociatedTokenAddressSync(TOKEN_PROGRAM_ID, spec.mint, recipient);
-      const info = await connection.getAccountInfo(ata);
-      let created = false;
-      if (info === null) {
-        created = true;
+      const { recipient, ata } = recipientByIndex.get(it.index)!;
+      const created = existsByIndex.get(it.index) === false;
+      if (created) {
         ixs.push(
           createAssociatedTokenAccountInstruction(spec.payer, ata, recipient, spec.mint, TOKEN_PROGRAM_ID)
         );
@@ -114,7 +134,6 @@ export async function buildAll(
     }
     batches.push({ index: i, items, tx, bytes });
   }
-  void sourceInfo; // existence/balance is surfaced in the UI, not required here
   return { batches, blockhash, lastValidBlockHeight };
 }
 

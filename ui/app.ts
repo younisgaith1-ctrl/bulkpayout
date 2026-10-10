@@ -156,10 +156,13 @@ function readDecimals(): number {
 }
 
 async function doBuild(): Promise<void> {
+  clearStatus();
+  setTokenPresets(); // enforce preset when selected
   if (rows.length === 0) {
     notify("no rows loaded — paste a CSV or click 'Load sample'", "err");
     return;
   }
+  const mintStr = els.mintInput.value.trim();
   let payer: PublicKey;
   try {
     payer = new PublicKey(els.payerInput.value.trim());
@@ -167,11 +170,10 @@ async function doBuild(): Promise<void> {
     notify("payer address is empty or invalid — connect a wallet or type a valid address", "err");
     return;
   }
-  if (!isValidPubkey(els.mintInput.value.trim())) {
-    notify("invalid mint address", "err");
+  if (!isValidPubkey(mintStr)) {
+    notify(`invalid mint address: "${mintStr}". Set the token dropdown to "Devnet USDC (6 decimals)" or paste a valid SPL mint.`, "err");
     return;
   }
-  clearStatus();
   setBusy(els.buildBtn, true, "Building…");
   notify("building… selecting RPC + checking recipient accounts");
   try {
@@ -195,11 +197,11 @@ async function doBuild(): Promise<void> {
 }
 
 async function doSimulate(): Promise<void> {
+  clearStatus();
   if (batches.length === 0) {
     notify("build transactions first", "err");
     return;
   }
-  clearStatus();
   setBusy(els.simulateBtn, true, "Simulating…");
   notify("simulating every batch on chain…");
   try {
@@ -219,6 +221,8 @@ async function doSimulate(): Promise<void> {
 }
 
 async function doSend(): Promise<void> {
+  clearStatus();
+  setTokenPresets();
   const win = window as unknown as { solana?: any; phantom?: { solana?: any } };
   const sol = win.solana ?? win.phantom?.solana;
   if (!sol || !sol.publicKey) {
@@ -229,15 +233,20 @@ async function doSend(): Promise<void> {
     notify("no rows loaded", "err");
     return;
   }
-  clearStatus();
   setBusy(els.sendBtn, true, "Sending…");
   try {
     const payer = new PublicKey(sol.publicKey.toString());
     activeConn = null;
     const conn = await getConn();
+    const mintStr = els.mintInput.value.trim();
+    if (!isValidPubkey(mintStr)) {
+      notify(`invalid mint address: "${mintStr}". Set the token dropdown to "Devnet USDC (6 decimals)" or paste a valid SPL mint.`, "err");
+      setBusy(els.sendBtn, false, "Sign & send (needs wallet)");
+      return;
+    }
     const built = await buildAll(rows, {
       payer,
-      mint: new PublicKey(els.mintInput.value.trim()),
+      mint: new PublicKey(mintStr),
       decimals: readDecimals(),
       connection: conn,
     });
@@ -296,6 +305,7 @@ async function doConnect(): Promise<void> {
 }
 
 function main(): void {
+  setTokenPresets();
   els.tokenSelect.addEventListener("change", setTokenPresets);
   els.netSelect.addEventListener("change", () => {
     activeConn = null;

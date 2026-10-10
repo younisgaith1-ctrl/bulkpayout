@@ -164,13 +164,14 @@ export async function feeAndSimulateAll(
     try {
       const res = await connection.simulateTransaction(b.tx, { commitment: "confirmed" });
       if (res.value.err) {
-        simulateError = JSON.stringify(res.value.err);
+        simulateError = typeof res.value.err === "string" ? res.value.err : JSON.stringify(res.value.err);
         simulateLogs = res.value.logs ?? [];
       } else {
         simulateLogs = res.value.logs ?? [];
       }
     } catch (e) {
-      simulateError = String(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      simulateError = msg;
     }
     out.push({ index: b.index, feeLamports, simulateError, simulateLogs, signature: null });
   }
